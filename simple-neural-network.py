@@ -1,12 +1,15 @@
 import random
 import math
+from main_mnist import *
+
 
 #
 # Shorthand:
 #   "pd_" as a variable prefix means "partial derivative"
 #   "d_" as a variable prefix means "derivative"
 #   "_wrt_" is shorthand for "with respect to"
-#   "w_ho" and "w_ih" are the index of weights from hidden to output layer neurons and input to hidden layer neurons respectively
+#   "w_ho" and "w_ih" are the index of weights from hidden to output layer neurons and input to hidden layer neurons
+#   respectively
 #
 # Comment references:
 #
@@ -16,11 +19,20 @@ import math
 #   https://class.coursera.org/neuralnets-2012-001/lecture/39
 # [3] The Back Propagation Algorithm
 #   https://www4.rgu.ac.uk/files/chapter3%20-%20bp.pdf
-
+#
+# blog explanation
+# https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
 class NeuralNetwork:
     LEARNING_RATE = 0.5
 
-    def __init__(self, num_inputs, num_hidden, num_outputs, hidden_layer_weights = None, hidden_layer_bias = None, output_layer_weights = None, output_layer_bias = None):
+    # inputs                hidden neu            out neus
+    #  (0)           ->     (0)             ->     (0)
+    #  ..             ↘   ↗ ..                ↗     ..
+    #  (n_inputs)    ->     (n_hidden)      ->     (n_outputs)
+    #             hidden weitss           out weits
+    #             =n_inputs*n_hidden      =n_hidden*n_outputs
+    def __init__(self, num_inputs, num_hidden, num_outputs, hidden_layer_weights=None, hidden_layer_bias=None,
+                 output_layer_weights=None, output_layer_bias=None):
         self.num_inputs = num_inputs
 
         self.hidden_layer = NeuronLayer(num_hidden, hidden_layer_bias)
@@ -29,16 +41,23 @@ class NeuralNetwork:
         self.init_weights_from_inputs_to_hidden_layer_neurons(hidden_layer_weights)
         self.init_weights_from_hidden_layer_neurons_to_output_layer_neurons(output_layer_weights)
 
+    # hidden weights = num_inps * num_hidden_neus
     def init_weights_from_inputs_to_hidden_layer_neurons(self, hidden_layer_weights):
         weight_num = 0
         for h in range(len(self.hidden_layer.neurons)):
             for i in range(self.num_inputs):
                 if not hidden_layer_weights:
+                    # for every hidden neuron we add i=num_inputs weights
                     self.hidden_layer.neurons[h].weights.append(random.random())
                 else:
+                    if (weight_num > (len(hidden_layer_weights) - 1)):
+                        print("error")
+                    if h > (len(self.hidden_layer.neurons) - 1):
+                        print("error")
                     self.hidden_layer.neurons[h].weights.append(hidden_layer_weights[weight_num])
                 weight_num += 1
 
+    # out weights = num_hidden_neus * num_out_neus
     def init_weights_from_hidden_layer_neurons_to_output_layer_neurons(self, output_layer_weights):
         weight_num = 0
         for o in range(len(self.output_layer.neurons)):
@@ -49,6 +68,7 @@ class NeuralNetwork:
                     self.output_layer.neurons[o].weights.append(output_layer_weights[weight_num])
                 weight_num += 1
 
+    # show all weights and biases for whole network structure
     def inspect(self):
         print('------')
         print('* Inputs: {}'.format(self.num_inputs))
@@ -71,9 +91,9 @@ class NeuralNetwork:
         # 1. Output neuron deltas
         pd_errors_wrt_output_neuron_total_net_input = [0] * len(self.output_layer.neurons)
         for o in range(len(self.output_layer.neurons)):
-
             # ∂E/∂zⱼ
-            pd_errors_wrt_output_neuron_total_net_input[o] = self.output_layer.neurons[o].calculate_pd_error_wrt_total_net_input(training_outputs[o])
+            pd_errors_wrt_output_neuron_total_net_input[o] = \
+                self.output_layer.neurons[o].calculate_pd_error_wrt_total_net_input(training_outputs[o])
 
         # 2. Hidden neuron deltas
         pd_errors_wrt_hidden_neuron_total_net_input = [0] * len(self.hidden_layer.neurons)
@@ -83,17 +103,20 @@ class NeuralNetwork:
             # dE/dyⱼ = Σ ∂E/∂zⱼ * ∂z/∂yⱼ = Σ ∂E/∂zⱼ * wᵢⱼ
             d_error_wrt_hidden_neuron_output = 0
             for o in range(len(self.output_layer.neurons)):
-                d_error_wrt_hidden_neuron_output += pd_errors_wrt_output_neuron_total_net_input[o] * self.output_layer.neurons[o].weights[h]
+                d_error_wrt_hidden_neuron_output += pd_errors_wrt_output_neuron_total_net_input[o] * \
+                                                    self.output_layer.neurons[o].weights[h]
 
             # ∂E/∂zⱼ = dE/dyⱼ * ∂zⱼ/∂
-            pd_errors_wrt_hidden_neuron_total_net_input[h] = d_error_wrt_hidden_neuron_output * self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_input()
+            pd_errors_wrt_hidden_neuron_total_net_input[h] = \
+                d_error_wrt_hidden_neuron_output * self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_input()
 
         # 3. Update output neuron weights
         for o in range(len(self.output_layer.neurons)):
             for w_ho in range(len(self.output_layer.neurons[o].weights)):
-
                 # ∂Eⱼ/∂wᵢⱼ = ∂E/∂zⱼ * ∂zⱼ/∂wᵢⱼ
-                pd_error_wrt_weight = pd_errors_wrt_output_neuron_total_net_input[o] * self.output_layer.neurons[o].calculate_pd_total_net_input_wrt_weight(w_ho)
+                pd_error_wrt_weight = \
+                    pd_errors_wrt_output_neuron_total_net_input[o] * \
+                    self.output_layer.neurons[o].calculate_pd_total_net_input_wrt_weight(w_ho)
 
                 # Δw = α * ∂Eⱼ/∂wᵢ
                 self.output_layer.neurons[o].weights[w_ho] -= self.LEARNING_RATE * pd_error_wrt_weight
@@ -101,21 +124,31 @@ class NeuralNetwork:
         # 4. Update hidden neuron weights
         for h in range(len(self.hidden_layer.neurons)):
             for w_ih in range(len(self.hidden_layer.neurons[h].weights)):
-
                 # ∂Eⱼ/∂wᵢ = ∂E/∂zⱼ * ∂zⱼ/∂wᵢ
-                pd_error_wrt_weight = pd_errors_wrt_hidden_neuron_total_net_input[h] * self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_weight(w_ih)
+                pd_error_wrt_weight = \
+                    pd_errors_wrt_hidden_neuron_total_net_input[h] * \
+                    self.hidden_layer.neurons[h].calculate_pd_total_net_input_wrt_weight(w_ih)
 
                 # Δw = α * ∂Eⱼ/∂wᵢ
                 self.hidden_layer.neurons[h].weights[w_ih] -= self.LEARNING_RATE * pd_error_wrt_weight
 
+    # calculate sum of all errors for all sets
+    # so input array must have number of raw equals to output neuron number
+    # this func can be use for recognize the pattern after network training.
+    # print(nn.calculate_total_error([[[0.1, 0.1], [0]]])) >> need to understand like this
+    # recognize [0.1, 0.1] and show the difference between [0] and result of recognizing
     def calculate_total_error(self, training_sets):
         total_error = 0
+        if training_sets is None:
+            print("error")
+
         for t in range(len(training_sets)):
             training_inputs, training_outputs = training_sets[t]
             self.feed_forward(training_inputs)
             for o in range(len(training_outputs)):
                 total_error += self.output_layer.neurons[o].calculate_error(training_outputs[o])
         return total_error
+
 
 class NeuronLayer:
     def __init__(self, num_neurons, bias):
@@ -147,6 +180,7 @@ class NeuronLayer:
             outputs.append(neuron.output)
         return outputs
 
+
 class Neuron:
     def __init__(self, bias):
         self.bias = bias
@@ -177,7 +211,7 @@ class Neuron:
     # δ = ∂E/∂zⱼ = ∂E/∂yⱼ * dyⱼ/dzⱼ
     #
     def calculate_pd_error_wrt_total_net_input(self, target_output):
-        return self.calculate_pd_error_wrt_output(target_output) * self.calculate_pd_total_net_input_wrt_input();
+        return self.calculate_pd_error_wrt_output(target_output) * self.calculate_pd_total_net_input_wrt_input()
 
     # The error for each neuron is calculated by the Mean Square Error method:
     def calculate_error(self, target_output):
@@ -212,28 +246,68 @@ class Neuron:
     # The partial derivative of the total net input with respective to a given weight (with everything else held constant) then is:
     # = ∂zⱼ/∂wᵢ = some constant + 1 * xᵢw₁^(1-0) + some constant ... = xᵢ
     def calculate_pd_total_net_input_wrt_weight(self, index):
+        if (index > (len(self.inputs) - 1)):
+            print("error")
         return self.inputs[index]
 
-###
 
 # Blog post example:
 
-#nn = NeuralNetwork(2, 2, 2, hidden_layer_weights=[0.15, 0.2, 0.25, 0.3], hidden_layer_bias=0.35, output_layer_weights=[0.4, 0.45, 0.5, 0.55], output_layer_bias=0.6)
-#for i in range(10000):
+# nn = NeuralNetwork(2, 2, 2, hidden_layer_weights=[0.15, 0.2, 0.25, 0.3], hidden_layer_bias=0.35, output_layer_weights=[0.4, 0.45, 0.5, 0.55], output_layer_bias=0.6)
+# for i in range(10000):
 #    nn.train([0.05, 0.1], [0.01, 0.99])
 #    print(i, round(nn.calculate_total_error([[[0.05, 0.1], [0.01, 0.99]]]), 9))
 
 # XOR example:
 
 training_sets = [
- [[0, 0], [0]],
- [[0, 1], [1]],
- [[1, 0], [1]],
- [[1, 1], [0]]
+    [[0, 0], [0]],
+    [[0, 1], [1]],
+    [[1, 0], [1]],
+    [[1, 1], [0]]
 ]
 
-nn = NeuralNetwork(len(training_sets[0][0]), 5, len(training_sets[0][1]))
-for i in range(10000):
- training_inputs, training_outputs = random.choice(training_sets)
- nn.train(training_inputs, training_outputs)
- print(i, nn.calculate_total_error(training_sets))
+training_sets0 = list()
+training_sets0.append(training_sets[0])
+
+
+# training_sets = [
+#     [[0, 0, 0], [0, 0]],
+#     [[0, 1, 1], [0, 1]],
+#     [[1, 0, 1], [1, 1]],
+#     [[1, 1, 0], [0, 0]]
+# ]
+
+
+def main_origin():
+    # for classic Xor example training_sets: num_inputs=2, num_outputs=1
+    nn = NeuralNetwork(num_inputs=len(training_sets[0][0]), num_hidden=5, num_outputs=len(training_sets[0][1]))
+    for i in range(10000):
+        training_inputs, training_outputs = random.choice(training_sets)
+        nn.train(training_inputs, training_outputs)
+
+        # show sum of errors for rows of training set
+        # print(i, nn.calculate_total_error(training_sets))
+        # show error for zero row of training set
+        print(i, nn.calculate_total_error(training_sets0))
+
+    # recognize test patterns
+    print(nn.calculate_total_error([[[0.1, 0.1], [0]]]))
+    print(nn.calculate_total_error([[[0.1, 0.1], [1]]]))
+
+    # print(i, round(nn.calculate_total_error([[[0.05, 0.1], [0.01, 0.99]]]), 9))
+
+    # how to see just output of out neurons
+    nn.feed_forward([0.9, 0.9])  # insert test pattern
+    print(nn.output_layer.neurons[0].output)  # see result of recognition
+
+    # nn.inspect()
+    pass
+
+
+def main():
+    main_origin()
+    # main_mnist()
+
+
+main()
