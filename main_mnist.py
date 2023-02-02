@@ -2,6 +2,11 @@ import tensorflow
 from keras.datasets import mnist
 import numpy
 
+
+from simple_neural_network import *
+#import simple_neural_network as snn
+
+
 def convert_label_to_list(digit):
     label_list = [0] * 10
     label_list[digit] = 1
@@ -37,19 +42,26 @@ def main_mnist():
     im1 = itrain_list[0]
     flat_im1 = list(numpy.concatenate(im1).flat)
     label1 = convert_label_to_list(ltrain[0])
-    nn = NeuralNetwork(len(itrain_list[0]) * len(itrain_list[0][0]), 784, 10, [0] * 784 * 784)
+    #nn = NeuralNetwork(num_inputs=len(itrain_list[0]) * len(itrain_list[0][0]), num_hidden=784, num_outputs=10, [0] * 784 * 784)
+    nn = NeuralNetwork(num_inputs=len(itrain_list[0]) * len(itrain_list[0][0]), num_hidden=784, num_outputs=10)
 
     flat_set = list()
-    for i in range(100):
+    for i in range(10):
         flat_im = list(numpy.concatenate(itrain_list[i]).flat)
         flat_im = convert_to_fraction(flat_im)
         flat_label = convert_label_to_list(ltrain[i])
         flat_set.append([flat_im, flat_label])
 
-    for i in range(100):
+    for i in range(10):
         nn.train(flat_set[i][0], flat_set[i][1])
 
-        print(i, nn.calculate_total_error(flat_set))
+        #print(i, nn.calculate_total_error(flat_set))
+
+    number0 = flat_set[i][0]
+    nn.feed_forward(number0)
+    #print(nn.output_layer.neurons[4].output)
+    for i in range(len(nn.output_layer.neurons)):
+        print(nn.output_layer.neurons[i].output)
 
     # for i in range(10000):
     #     flat_im = list(numpy.concatenate(itrain_list[i]).flat)
