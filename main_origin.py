@@ -52,5 +52,5 @@ def main_origin():
     nn.feed_forward([0.9, 0.9])  # insert test pattern
     print(nn.output_layer.neurons[0].output)  # see result of recognition
 
-    # nn.inspect()
+    nn.inspect()
     pass

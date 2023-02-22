@@ -1,7 +1,8 @@
-import random
 import math
-import main_mnist
+import random
 
+
+# https://github.com/mattm/simple-neural-network/blob/master/neural-network.py
 #
 # Shorthand:
 #   "pd_" as a variable prefix means "partial derivative"
@@ -22,7 +23,7 @@ import main_mnist
 # blog explanation
 # https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
 class NeuralNetwork:
-    LEARNING_RATE = 0.5
+    LEARNING_RATE = 0.035 #0.5
 
     # inputs                hidden neu            out neus
     #  (0)           ->     (0)             ->     (0)
@@ -41,13 +42,16 @@ class NeuralNetwork:
         self.init_weights_from_hidden_layer_neurons_to_output_layer_neurons(output_layer_weights)
 
     # hidden weights = num_inps * num_hidden_neus
+    # flat list from 0 to
     def init_weights_from_inputs_to_hidden_layer_neurons(self, hidden_layer_weights):
+        weight_max = 1 / math.sqrt(len(self.hidden_layer.neurons))
         weight_num = 0
         for h in range(len(self.hidden_layer.neurons)):
             for i in range(self.num_inputs):
-                if not hidden_layer_weights:
+                if hidden_layer_weights is None:
                     # for every hidden neuron we add i=num_inputs weights
-                    self.hidden_layer.neurons[h].weights.append(random.random())
+                    #self.hidden_layer.neurons[h].weights.append(random.random())
+                    self.hidden_layer.neurons[h].weights.append(random.uniform(-weight_max, weight_max))
                 else:
                     if (weight_num > (len(hidden_layer_weights) - 1)):
                         print("error")
@@ -58,14 +62,30 @@ class NeuralNetwork:
 
     # out weights = num_hidden_neus * num_out_neus
     def init_weights_from_hidden_layer_neurons_to_output_layer_neurons(self, output_layer_weights):
+        weight_max = 1/math.sqrt(len(self.output_layer.neurons))
         weight_num = 0
         for o in range(len(self.output_layer.neurons)):
             for h in range(len(self.hidden_layer.neurons)):
-                if not output_layer_weights:
-                    self.output_layer.neurons[o].weights.append(random.random())
+                if output_layer_weights is None:
+                    #self.output_layer.neurons[o].weights.append(random.random())
+                    self.output_layer.neurons[o].weights.append(random.uniform(-weight_max, weight_max))
                 else:
                     self.output_layer.neurons[o].weights.append(output_layer_weights[weight_num])
                 weight_num += 1
+
+    def get_hidden_layer_weights(self):
+        hidden_layer_weights = list()
+        weight_num = len(self.hidden_layer.neurons) * len(self.hidden_layer.neurons[0].weights)
+        for h in range(len(self.hidden_layer.neurons)):
+            hidden_layer_weights.extend(self.hidden_layer.neurons[h].weights)
+        return hidden_layer_weights
+
+    def get_output_layer_weights(self):
+        output_layer_weights = list()
+        weight_num = len(self.output_layer.neurons) * len(self.hidden_layer.neurons)
+        for o in range(len(self.output_layer.neurons)):
+            output_layer_weights.extend(self.output_layer.neurons[o].weights)
+        return output_layer_weights
 
     # show all weights and biases for whole network structure
     def inspect(self):
@@ -154,7 +174,8 @@ class NeuronLayer:
     def __init__(self, num_neurons, bias):
 
         # Every neuron in a layer shares the same bias
-        self.bias = bias if bias else random.random()
+        #self.bias = bias if bias else random.random()
+        self.bias = bias if bias else random.uniform(-0.035, 0.035)
 
         self.neurons = []
         for i in range(num_neurons):
